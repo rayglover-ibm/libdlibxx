@@ -4,12 +4,14 @@
 #include <dlfcn.h>
 #include <functional>
 #include <memory>
-
-#include <boost/optional.hpp> // Will be replaced with std::optional in C++14.
+#include <experimental/optional>
 
 namespace dlibxx {
 
 namespace util {
+
+template<class T>
+using optional = std::experimental::optional<T>;
 
 //m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Trick to convert a void* to a std::function.
@@ -112,14 +114,14 @@ public:
 	// for function pointer syntax in the template parameter.
 	template <typename Prototype>
 	inline auto lookup(char const* fname) const
-		-> boost::optional< std::function<Prototype> >
+		-> util::optional< std::function<Prototype> >
 	{
 		return symbol_lookup_wrapper<Prototype>::lookup(*this, fname);
 	}
 
 	template <typename Prototype>
 	inline auto lookup(std::string const& fname) const
-		-> boost::optional< std::function<Prototype> >
+		-> util::optional< std::function<Prototype> >
 	{
 		return this->lookup<Prototype>(fname.c_str());
 	}
@@ -145,13 +147,13 @@ private:
 	// returned which can be retrieved with get().
 	template <typename Ret, typename... Args>
 	auto symbol_lookup_impl(char const* fname) const
-		-> boost::optional< std::function<Ret (Args...)> >
+		-> util::optional< std::function<Ret (Args...)> >
 	{
 		// If the handle is invalid, return an uninitialized optional object.
 		if (handle_ == nullptr)
 		{
 			error_ = "Handle not open.";
-			return boost::optional< std::function<Ret (Args...)> >();
+			return util::optional< std::function<Ret (Args...)> >();
 		}
 
 		// Clear previous errors.
@@ -167,7 +169,7 @@ private:
 		if (error_message != NULL)
 		{
 			error_ = error_message;
-			return boost::optional< std::function<Ret (Args...)> >();
+			return util::optional< std::function<Ret (Args...)> >();
 		}
 
 		return fptr;
@@ -175,7 +177,7 @@ private:
 
 	template <typename Ret, typename... Args>
 	inline auto symbol_lookup_impl(std::string const& fname) const
-		-> boost::optional< std::function<Ret (Args...)> >
+		-> util::optional< std::function<Ret (Args...)> >
 	{
 		return this->symbol_lookup_impl<Ret, Args...>(fname.c_str());
 	}
@@ -193,7 +195,7 @@ private:
 	struct symbol_lookup_wrapper<Ret(Args...)>
 	{
 		static inline auto lookup(handle const& lib, char const* fname)
-			-> boost::optional< std::function<Ret(Args...)> >
+			-> util::optional< std::function<Ret(Args...)> >
 		{
 			return lib.symbol_lookup_impl<Ret, Args...>(fname);
 		}
