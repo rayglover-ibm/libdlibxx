@@ -1,37 +1,33 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required (VERSION 2.8.8)
 
-project(libdlibxx)
+project (libdlibxx)
 
-add_definitions("-std=c++11")
+add_definitions("-std=c++14")
 
-set(VERSION_MAJOR 1)
-set(VERSION_MINOR 0)
-set(VERSION_PATCH 0)
+set (VERSION_MAJOR 1)
+set (VERSION_MINOR 0)
+set (VERSION_PATCH 0)
 
-include_directories(include)
+include_directories (include)
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-### Build libdlibxx
-add_library(
+# -- Build libdlibxx
+add_library (
   dlibxx SHARED
   "${PROJECT_SOURCE_DIR}/src/dlibxx.cxx"
 )
 
-target_link_libraries(dlibxx dl)
+target_link_libraries (dlibxx dl)
 
-set_target_properties(
+set_target_properties (
   dlibxx PROPERTIES
   SOVERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
 )
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-### Install Rules
-install(TARGETS dlibxx DESTINATION "lib")
-install(FILES "${PROJECT_SOURCE_DIR}/include/dlibxx.hxx" DESTINATION "include")
-install(FILES "${PROJECT_SOURCE_DIR}/LICENSE" DESTINATION "share/licenses/${PROJECT_NAME}")
+# -- Install Rules
+install (TARGETS dlibxx DESTINATION "lib")
+install (FILES "${PROJECT_SOURCE_DIR}/include/dlibxx.hxx" DESTINATION "include")
+install (FILES "${PROJECT_SOURCE_DIR}/LICENSE" DESTINATION "share/licenses/${PROJECT_NAME}")
 
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-### Examples
-add_subdirectory(examples)
-
+# -- Examples
+add_subdirectory (examples)

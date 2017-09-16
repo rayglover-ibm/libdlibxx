@@ -1,20 +1,16 @@
-#ifndef PLUGIN_HXX__
-#define PLUGIN_HXX__
-
+#pragma once
 #include <string>
 #include <iostream>
 
-// A rendering plugin interface.
+extern "C" int bin_op(int a, int b);
+
+/* A rendering plugin interface. */
 struct plugin
 {
-	virtual ~plugin()
-	{
-	}
+	virtual ~plugin() {}
 
 	virtual std::string name () = 0;
 	virtual void render() {
 		std::cout << "Default rendering\n";
 	}
 };
-
-#endif // #ifndef PLUGIN_HXX__

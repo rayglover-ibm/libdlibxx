@@ -1,68 +1,55 @@
-#include <dlibxx.hxx>
+#include "dlibxx.hxx"
 
-namespace dlibxx {
+#include <dlfcn.h>
+#include <stdexcept>
 
-handle::handle(std::string const& name)
-	: name_(name)
+namespace dlibxx
 {
-	this->load(name_);
-}
-
-handle::~handle()
-{
-	this->close();
-}
-
-void handle::resolve_policy(::dlibxx::resolve rt)
-{
-	resolve_time_ = rt;
-}
-
-void handle::set_options(::dlibxx::options opts)
-{
-	resolve_options_ = opts;
-}
-
-void handle::load(std::string const& name)
-{
-	this->close();
-	int resolve_flag =
-		static_cast<int>(resolve_time_) | static_cast<int>(resolve_options_);
-
-	// Clear previous errors.
-	::dlerror();
-
-	if (name.size() == 0)
-		handle_ = ::dlopen(NULL, resolve_flag);
-	else
-		handle_ = ::dlopen(name.c_str(), resolve_flag);
-
-	char* error_message = ::dlerror();
-	if (error_message != NULL)
+	int parse_resolution_policy(resolve_policy rp)
 	{
-		error_ = error_message;
-		return;
+		switch (rp) {
+			case resolve_policy::lazy: return int(RTLD_LAZY);
+			case resolve_policy::now:  return int(RTLD_NOW);
+		}
 	}
 
-	name_ = name;
+	handle::handle(resolve_policy rt, const char* file)
+	{
+		int flags = parse_resolution_policy(rt) | int(RTLD_LOCAL);
+		handle_ = ::dlopen(file, flags);
+
+		set_error();
+	}
+
+	handle::handle(resolve_policy rt)
+	{
+		int flags = parse_resolution_policy(rt) | int(RTLD_LOCAL);
+		handle_ = ::dlopen(nullptr, flags);
+
+		set_error();
+	}
+
+	handle::~handle()
+	{
+		if (handle_) ::dlclose(handle_);
+		handle_ = nullptr;
+	}
+
+	bool handle::set_error() const
+	{
+		char* error_message = ::dlerror();
+		if (error_message != nullptr) {
+			error_ = std::string(error_message);
+			return true;
+		}
+		return false;
+	}
+
+	void* handle::sym_lookup(const char* fname) const {
+		return ::dlsym(handle_, fname);
+	}
+
+	bool handle::has_library_loaded(const char* file) {
+		return ::dlopen(file, RTLD_LAZY | RTLD_NOLOAD) != NULL;
+	}
 }
-
-std::string const& handle::get_lib_name() const
-{
-	return name_;
-}
-
-std::string const& handle::error() const
-{
-	return error_;
-}
-
-void handle::close()
-{
-	if (handle_)
-		::dlclose(handle_);
-
-	handle_ = nullptr;
-}
-
-} // namespace dlibxx
