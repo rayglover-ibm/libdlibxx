@@ -1,7 +1,5 @@
 #include "dlibxx.hxx"
-
 #include <dlfcn.h>
-#include <stdexcept>
 
 namespace dlibxx
 {
@@ -22,12 +20,8 @@ namespace dlibxx
 	}
 
 	handle::handle(resolve_policy rt)
-	{
-		int flags = parse_resolution_policy(rt) | int(RTLD_LOCAL);
-		handle_ = ::dlopen(nullptr, flags);
-
-		set_error();
-	}
+		: handle(rt, nullptr)
+	{}
 
 	handle::~handle()
 	{
@@ -50,6 +44,6 @@ namespace dlibxx
 	}
 
 	bool handle::has_library_loaded(const char* file) {
-		return ::dlopen(file, RTLD_LAZY | RTLD_NOLOAD) != NULL;
+		return ::dlopen(file, RTLD_LAZY | RTLD_NOLOAD) != nullptr;
 	}
 }
