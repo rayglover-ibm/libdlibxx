@@ -13,7 +13,7 @@ include_directories (include)
 # -- Build libdlibxx
 add_library (
   dlibxx SHARED
-  "${PROJECT_SOURCE_DIR}/src/dlibxx.cxx"
+  "${PROJECT_SOURCE_DIR}/src/dlibxx.unix.cxx"
 )
 
 target_link_libraries (dlibxx dl)
