@@ -1,14 +1,12 @@
 # Libdlibxx
 
-Libdlibxx is a generalized C++11 wrapper library around the dl
+Libdlibxx is a generalized C++14 wrapper library around the unix dl
 functions from `<dlfcn.h>` to handle the loading and symbol lookup in
 dynamic libraries.
 
 ### Dependencies
 
-- Until `optional` is introduced into the standard, this code relies on
-  Boost.Optional.
-- A C++11 compiler.
+- A C++14 compiler.
 
 ### Licence
 
@@ -25,23 +23,17 @@ To link to this library, pass the command line argument `-ldlibxx`.
 ```cpp
 // Construct a DL handle with a string.
 dlibxx::handle lib("library-name.so");
-
-// Given an already constructed DL handle, replace it with a new DL.
-dlibxx::handle lib;
-lib.load("library-name.so");
 ```
 
 #### Library Loading Error Handling
 
-If the library was loaded successfully, a call to the `loaded()`
-function will return `true`. Error handling code could be performed as
+A call to the `error()` function will return an `optional` error, which if present will be the most recent error. Error handling code could be performed as
 follows after a library has been loaded.
 
 ```cpp
-if (!lib.loaded())
-{
-  std::cerr << lib.error() << std::endl;
-  return 1;
+if (lib.error()) {
+    std::cerr << lib.error().value() << std::endl;
+    return 1;
 }
 ```
 
@@ -53,19 +45,17 @@ of the function in the dynamic library as the function argument.
 
 If the function was successfully loaded, then the `optional` when
 cast to bool will return `true`, and `false` otherwise. After a
-successful load, the function can be retrieved via a call to `get()`.
+successful load, the function can be retrieved via a call to `value()`.
 
 ```cpp
 // Get an optional<function<Signature>> to the function.
 auto func_symbol = lib.lookup<void(int)>("function_name");
-if (func_symbol)
-{
-  std::function<void(int)> f = func_symbol.get();
-  f(5);
+if (func_symbol) {
+    std::function<void(int)> f = func_symbol.value();
+    f(5);
 }
-else
-{
-  std::cout << "Symbol lookup failed.\n";
+else {
+    std::cout << "Symbol lookup failed.\n";
 }
 ```
 
@@ -79,16 +69,43 @@ If the instance could not be created, a `shared_ptr` containing
 `nullptr` will be returned.
 
 ```cpp
-struct base_type
-{
-  virtual void foo() = 0;
+struct base {
+    virtual void foo() = 0;
 };
 
-std::shared_ptr<base_type> p = lib.create<base_type>("factory_function");
+std::shared_ptr<base> p = lib.create<base>("factory_function");
 if (p)
-  p->foo();
+    p->foo();
 else
-  std::cout << "Unable to create instance.\n";
+    std::cout << "Unable to create instance.\n";
+```
+
+#### Library fascades
+
+A helper class, `dlibxx::handle_fascade`, can be used to define a collection of functions defined within a single library. The fascade will load the library and search for symbols at construction, and present them for use. For example, to wrap a library implementing the [cblas](https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms) interface:
+
+```cpp
+/* The library public includes */
+#include <cblas.h>
+
+class cblas final : dlibxx::handle_fascade
+{
+    inline cblas(const std::string& path)
+        : dlibxx::handle_fascade{ path.c_str() }
+    {}
+
+  public:
+    op<decltype(::cblas_dnrm2)> dnrm2 { h, "cblas_dnrm2" };
+    op<decltype(::cblas_snrm2)> snrm2 { h, "cblas_snrm2" };
+    op<decltype(::cblas_dgemv)> dgemv { h, "cblas_dgemv" };
+    op<decltype(::cblas_sgemv)> sgemv { h, "cblas_sgemv" };
+};
+
+int main()
+{
+    cblas openblas("libopenblas.so");
+    cblas.sgemv(...);
+}
 ```
 
 #### Symbol Resolution Policy
@@ -96,44 +113,13 @@ else
 When loading the dynamic library, it can be specified whether all symbols
 should be bound on opening or only when they are referenced. The
 default is to bind all symbols when the library is loaded (through the
-use of `dlibxx::resolve::now`), but lazy binding is also available.
+use of `dlibxx::resolve_policy::now`), but lazy binding is also available.
 
 It can be specified in the constructor as follows:
 
 ```cpp
-dlibxx::handle lib("library-name.so", dlibxx::resolve::lazy);
+dlibxx::handle lib(dlibxx::resolve_policy::lazy, "library-name.so");
 
-```
-
-Additionally, if you already have a handle, you can set the resolution
-policy for future library loads like so:
-
-```cpp
-dlibxx::handle lib;
-lib.resolve_policy(dlibxx::resolve::lazy);
-```
-
-#### Options
-
-In addition to the open policy, the options available for the `flag`
-argument to `dlopen` are also available. They can be set with the
-`set_options` member function before opening the library by ORing the
-enum values together. The values available are:
-
-```cpp
-dlibxx::options::none      = 0,
-dlibxx::options::global    = RTLD_GLOBAL,
-dlibxx::options::local     = RTLD_LOCAL,
-dlibxx::options::no_delete = RTLD_NODELETE,
-dlibxx::options::no_load   = RTLD_NOLOAD,
-dlibxx::options::deep_bind = RTLD_DEEPBIND
-```
-
-(See `man dlopen` for information on options.)
-
-```cpp
-dlibxx::handle lib;
-lib.set_options(dlibxx::options::global | dlibxx::options::no_load);
 ```
 
 ### Example Code
