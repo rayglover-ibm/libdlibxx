@@ -52,7 +52,7 @@ namespace dlibxx
 
 		/* Lookup the function named FNAME in the dynamic library. */
 		template <typename Prototype>
-		inline util::optional< std::function<Prototype> > lookup(const char* fname) const {
+		inline std::function<Prototype> lookup(const char* fname) const {
 			return symbol_lookup_wrapper<Prototype>::lookup(*this, fname);
 		}
 
@@ -63,7 +63,7 @@ namespace dlibxx
 		{
 			auto sym = this->symbol_lookup_impl<T*, Args...>(fname);
 
-			if (sym) return { sym.value()(std::forward<Args>(args)...), std::default_delete<T>() };
+			if (sym) return { sym(std::forward<Args>(args)...), std::default_delete<T>() };
 			else     return { nullptr };
 		}
 
@@ -75,7 +75,7 @@ namespace dlibxx
 		void* sym_lookup(const char* fname) const;
 
 		template <typename Ret, typename... Args>
-		util::optional< std::function<Ret (Args...)> > symbol_lookup_impl(char const* fname) const
+		std::function<Ret (Args...)> symbol_lookup_impl(char const* fname) const
 		{
 			/* Lookup the symbol from the dynamic library. */
 			auto fptr = util::fptr_cast<Ret, Args...>(sym_lookup(fname));
@@ -104,34 +104,34 @@ namespace dlibxx
 	   symbols from it as a fascade. */
 	class handle_fascade
 	{
+		handle h_;
+		util::optional<std::string> error_;
+
 	  public:
+		/* the first error */
+		const util::optional<std::string>& error() { return error_; }
+
 		template <typename P>
 		class op final : public std::function<P>
 		{
-			auto get_or_abort(dlibxx::handle& h, const char* sym)
+			auto get_or_abort(handle_fascade& f, const char* sym)
 			{
-				util::optional<std::function<P>> fn;
-				if (!h.error()) {
-					fn = h.lookup<P>(sym);
-				}
-				if (h.error()) {
-					fprintf(stderr, "%s\n", h.error().value().c_str());
-					abort();
-				}
-				return std::move(fn.value());
+				std::function<P> fn = f.h_.lookup<P>(sym);
+
+				if (!f.error_) { f.error_ = f.h_.error(); }
+				return std::move(fn);
 			}
 
 		  public:
-			op(dlibxx::handle& h, const char* sym)
-				: std::function<P>{ get_or_abort(h, sym) }
+			op(handle_fascade* fascade, const char* sym)
+				: std::function<P>{ get_or_abort(*fascade, sym) }
 			{}
 		};
 
 	  protected:
 		inline handle_fascade(
 			const char* path, resolve_policy rp = dlibxx::resolve_policy::lazy)
-			: h{ path, rp } {}
-
-		handle h;
+			: h_{ path, rp }, error_{ h_.error() }
+		{}
 	};
 }

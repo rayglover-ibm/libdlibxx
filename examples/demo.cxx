@@ -28,7 +28,7 @@ int main() {
 			auto op = lib.lookup<decltype(::bin_op)>("bin_op");
 
 			/* Only call the function if symbol lookup was successful. */
-			if (op) std::cout << op.value()(1, 2) << std::endl;
+			if (op) std::cout << op(1, 2) << std::endl;
 			else    std::cerr << lib.error().value() << '\n';
 		}
 		{
