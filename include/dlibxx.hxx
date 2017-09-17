@@ -110,7 +110,10 @@ namespace dlibxx
 		{
 			auto get_or_abort(dlibxx::handle& h, const char* sym)
 			{
-				auto fn = h.lookup<P>(sym);
+				util::optional<std::function<P>> fn;
+				if (!h.error()) {
+					fn = h.lookup<P>(sym);
+				}
 				if (h.error()) {
 					fprintf(stderr, "%s\n", h.error().value().c_str());
 					abort();
