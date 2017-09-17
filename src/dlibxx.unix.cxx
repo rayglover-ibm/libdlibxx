@@ -11,7 +11,7 @@ namespace dlibxx
 		}
 	}
 
-	handle::handle(resolve_policy rt, const char* file)
+	handle::handle(const char* file, resolve_policy rt)
 	{
 		int flags = parse_resolution_policy(rt) | int(RTLD_LOCAL);
 		handle_ = ::dlopen(file, flags);
@@ -20,7 +20,7 @@ namespace dlibxx
 	}
 
 	handle::handle(resolve_policy rt)
-		: handle(rt, nullptr)
+		: handle(nullptr, rt)
 	{}
 
 	handle::~handle()

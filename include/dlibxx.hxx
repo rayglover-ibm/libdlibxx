@@ -39,7 +39,7 @@ namespace dlibxx
 		static bool has_library_loaded(const char* file);
 
 		/* Load the dynamic library by the given path. */
-		handle(resolve_policy, const char* file);
+		handle(const char* file, resolve_policy = dlibxx::resolve_policy::lazy);
 
 		/* Open a handle for the main program. */
 		handle(resolve_policy);
@@ -49,7 +49,7 @@ namespace dlibxx
 
 		/* The last error that occured for this handle, if any. */
 		inline const util::optional<std::string>& error() const { return error_; }
-		
+
 		/* Lookup the function named FNAME in the dynamic library. */
 		template <typename Prototype>
 		inline util::optional< std::function<Prototype> > lookup(const char* fname) const {
@@ -125,9 +125,10 @@ namespace dlibxx
 		};
 
 	  protected:
-		inline handle_fascade(resolve_policy rp, const char* path)
-			: h{ rp, path } {}
-		
+		inline handle_fascade(
+			const char* path, resolve_policy rp = dlibxx::resolve_policy::lazy)
+			: h{ path, rp } {}
+
 		handle h;
 	};
 }
