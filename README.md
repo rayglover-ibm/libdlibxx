@@ -43,16 +43,14 @@ Symbol lookup is performed with the `lookup` member function. You must
 pass in the type of the function as the template parameter and the name
 of the function in the dynamic library as the function argument.
 
-If the function was successfully loaded, then the `optional` when
-cast to bool will return `true`, and `false` otherwise. After a
-successful load, the function can be retrieved via a call to `value()`.
+If the function was successfully loaded, then the `std::function` when
+cast to bool will return `true`, and `false` otherwise.
 
 ```cpp
-// Get an optional<function<Signature>> to the function.
+// Get an function<Signature> to the function.
 auto func_symbol = lib.lookup<void(int)>("function_name");
 if (func_symbol) {
-    std::function<void(int)> f = func_symbol.value();
-    f(5);
+    func_symbol(5);
 }
 else {
     std::cout << "Symbol lookup failed.\n";
@@ -95,10 +93,10 @@ class cblas final : dlibxx::handle_fascade
     {}
 
   public:
-    op<decltype(::cblas_dnrm2)> dnrm2 { h, "cblas_dnrm2" };
-    op<decltype(::cblas_snrm2)> snrm2 { h, "cblas_snrm2" };
-    op<decltype(::cblas_dgemv)> dgemv { h, "cblas_dgemv" };
-    op<decltype(::cblas_sgemv)> sgemv { h, "cblas_sgemv" };
+    op<decltype(::cblas_dnrm2)> dnrm2 { this, "cblas_dnrm2" };
+    op<decltype(::cblas_snrm2)> snrm2 { this, "cblas_snrm2" };
+    op<decltype(::cblas_dgemv)> dgemv { this, "cblas_dgemv" };
+    op<decltype(::cblas_sgemv)> sgemv { this, "cblas_sgemv" };
 };
 
 int main()
